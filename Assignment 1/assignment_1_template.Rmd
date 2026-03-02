@@ -1,0 +1,242 @@
+---
+title: "Assignment 1: Logit / Probit"
+author: "Advanced Methods for Data Analysis in Public Policy Research FS 26 –-- ETH Zürich"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+> **Topic**: Income Inequality and Happiness\
+> **Group Name**: *Best Friends Forever and Ever*\
+> **Authors**: *Ben Berton, Adam Pederson*\
+> **Date**: *02-03-2026*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+### Setup
+
+```{r data setup, eval = T, echo = T, results = 'hide', message=F, warning=F}
+# import all needed packages here
+library(dplyr)
+
+# load the data. Place the data in the same folder as your markdown script.
+df <- read.csv('happiness_inequality.csv')
+```
+
+### 1. Descriptives
+
+**a)** Report summary statistics (mean, sd, min, max) for `happy`, `ln_income`, `gini`, `age`, `educ_yrs`.
+
+```{r question 1 a, eval = T, echo = T}
+## Happy summary statistics
+summary(df$happy)
+sd(df$happy)
+
+## ln_income summary statistics
+summary(df$ln_income)
+sd(df$ln_income)
+
+## gini summary statistics
+summary(df$gini)
+sd(df$gini)
+
+## age summary statistics
+summary(df$age)
+sd(df$age)
+
+```
+
+**b)** Report the share of $happy$ in the full sample and by unemployment status.
+
+```{r question 1 b, eval = T, echo = T}
+# Share of happy
+sum(df$happy == 1)/nrow(df)
+
+# Getting employed and unemployed data frames
+unemployed_df <- df %>% filter(unemployed == 1)
+employed_df <- df %>% filter(unemployed == 0)
+
+# Share of unemployed that are happy
+sum(unemployed_df$happy == 1)/nrow(unemployed_df)
+
+# Share of employed that are happy
+sum(employed_df$happy == 1)/nrow(employed_df)
+
+```
+
+**c)** Briefly describe whether individuals in higher-inequality regions report lower happiness.
+
+```{r question 1 c, eval = T, echo = T}
+# Calculate correlation between gini coefficient and happiness
+cor(df$gini, df$happy)
+
+# Calculate mean happiness in locations were the gini is in the top quartile
+top_q_gini <- df %>% filter(gini >= quantile(gini, 0.75))
+mean(top_q_gini$happy)
+
+# Calculate mean happiness in locations were the gini is in the low quartile
+bottom_q_gini <- df %>% filter(gini <= quantile(gini, 0.25))
+mean(bottom_q_gini$happy)
+
+# In the top quartile of income inequality, individuals are 62 percent likley 
+# to be happy compared to 64 percent of those in low income inequality
+
+```
+
+### 2. Linear Probability Model
+
+**a)** Estimate the LPM: $$happy_i = \alpha + \beta_1 \ln\_income_i + \beta_2 gini_i + \varepsilon_i$$
+
+```{r question 2 a, eval = T, echo = T}
+lpm_model <- lm(happy ~ ln_income + gini, data = df)
+summary(lpm_model)
+```
+
+**b)** Interpret $\beta_1$ and $\beta_2$ as changes in probability.\
+
+Holding the Gini coefficient constant, a one-unit increase in log-income
+is associated with a 5.17 percentage point increase in the probability of 
+being happy. Holding log-income constant, a one-unit increase in the gini
+coefficient is associated with a 20 percentage point decrease in the
+probability of being happy.
+
+**c)** Do any fitted values fall outside $[0,1]$?
+If yes, report the share and show an example.
+
+```{r question 2 b, eval = T, echo = T}
+# Adding the predicted values to the df
+df$pred_happiness <- lpm_model$fitted.values
+
+# Checking amout of values outside [0, 1]
+range(df$pred_happiness)
+summary(df$pred_happiness)
+
+# I was not able to find any fitted values outside of [0, 1], as the lowest 
+# value was 0.427 and the highest was 0.7992
+```
+
+**d)** In one paragraph, discuss the limitations of the LPM for binary outcomes.\
+
+The limitations of LPMs for binary outcomes are that it can produce values
+outside of 0 and 1 and that it doesn't allow the effect of x on the probability
+vary depending on the value of X (binary outcomes are normally s shaped).
+
+### 3. Logit and Probit
+
+**a)** Estimate **logit** and **probit** versions of the model specified in Question 2.
+
+```{r question 3 a, eval = T, echo = T}
+lpm_model <- lm(happy ~ ln_income + gini, data = df)
+logit_model <- glm(happy ~ ln_income + gini, data = df, family = binomial(link = "logit"))
+probit_model <- glm(happy ~ ln_income + gini, data = df, family = binomial(link = "probit"))
+summary(lpm_model)
+summary(logit_model)
+summary(probit_model)
+
+```
+
+**b)** Compare the signs and statistical significance of `ln_income` and `gini` across the LPM, Logit, and Probit models.\
+
+For all three models, the variables are statistically significant with a alpha 
+of 0, with the log-income variable having a positive sign and the gini
+coefficient having a negative sign for each model.
+
+**c)** Explain why logit/probit coefficients are not directly interpretable as percentage-point changes (unlike LPM coefficients).\
+
+They are not directly interpretable as percentage points, because they show a
+one unit change in the z value for the probit model and a one unit change
+in the log-odds for the logit model. The results can only be interpreted as
+probabilities after applying the Logistic or Standard Normal Cumulative
+Distribution functions.
+
+### 4. Adding Controls and Clustering
+
+**a)** Estimate a preferred specification (logit or probit) including the following controls: `age`, `age2`, `female`, `educ_yrs`, `married`, `unemployed`.
+Use standard errors clustered at the `region` level.
+
+```{r question 4 a, eval = T, echo = T}
+# install.packages("fixest")
+library(fixest)
+probit_model_adv <- feglm(happy ~ ln_income + gini + age + age2 + female
+                        + educ_yrs + married + unemployed,
+                        data = df,
+                        family = binomial(link = "probit"),
+                        cluster = ~region)
+
+summary(probit_model_adv)
+
+```
+
+**b)** Report the estimated effects of `ln_income` and `gini` using **marginal effects**.
+
+```{r question 4 b, eval = T, echo = T}
+predictions_ln_income = predict(probit_model_adv,
+                                new_data = data.frame("ln_income" = 0,1),
+                                type = "response")
+
+```
+
+**c)** Compare these results to the bivariate model from Question 3.
+How do the estimates change?
+
+```{r question 4 c, eval = T, echo = T}
+# Add your code here
+
+```
+
+**d)** Which control variables are most strongly associated with happiness?\
+
+### 5. Predicted Probabilities for Profiles
+
+**a)** Using your preferred nonlinear model from Question 4, compute predicted happiness probabilities for the following profiles:
+
+-   **A:** Age=30, Female=0, Educ=12, Married=0, Unemployed=0, `ln_income` at the 25th percentile, `gini` at the 25th percentile.
+-   **B:** Same as A, but `gini` at the 75th percentile.
+-   **C:** Same as A, but `ln_income` at the 75th percentile (keep `gini` at the 25th).
+
+```{r question 5 a, echo = T, eval = T}
+# add your code here
+```
+
+**b)** Interpret the differences $(B - A)$ and $(C - A)$.
+
+```{r question 5, echo = T, eval = T}
+# add your code here
+
+```
+
+### 6. Marginal Effect of a 10% Income Increase
+
+**a)** Report the **Average Marginal Effect (AME)** of `ln_income`.
+
+```{r question 6 a, eval = T, echo = T}
+# add your code here
+
+```
+
+**b)** Based on the AME, approximate the effect of a 10% income increase ($\Delta \ln(x) \approx 0.10$).
+
+**c)** Explain (in words) why marginal effects can vary across individuals in non-linear models and why the AME is often reported.\
+
+### 7. Interaction / Heterogeneity
+
+Alesina et al. discuss that inequality may affect groups differently.
+
+**a)** Estimate a model that includes an interaction term between `gini` and `income_z` (relative income).
+Interpret the interaction coefficient in terms of probabilities.
+
+```{r question 7, eval = T, echo = T}
+# add your code here
+
+```
+
+### 8. Policy Communication and Limitations
+
+**a)** Give two limitations of interpreting coefficient on inequality causally.\
+
+**b)** Write a short policy-facing interpretation (4–6 sentences) of your main result using predicted probabilities or marginal effects.\
