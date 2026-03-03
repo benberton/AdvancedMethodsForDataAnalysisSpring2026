@@ -162,6 +162,7 @@ Use standard errors clustered at the `region` level.
 ```{r question 4 a, eval = T, echo = T}
 # install.packages("fixest")
 library(fixest)
+
 probit_model_adv <- feglm(happy ~ ln_income + gini + age + age2 + female
                         + educ_yrs + married + unemployed,
                         data = df,
@@ -175,9 +176,20 @@ summary(probit_model_adv)
 **b)** Report the estimated effects of `ln_income` and `gini` using **marginal effects**.
 
 ```{r question 4 b, eval = T, echo = T}
-predictions_ln_income = predict(probit_model_adv,
-                                new_data = data.frame("ln_income" = 0,1),
-                                type = "response")
+# install.packages("mfx")
+library(mfx)
+
+model_mfx <- probitmfx(happy ~ ln_income + gini + age + age2 + female + 
+                       educ_yrs + married + unemployed, 
+                       data = df, 
+                       clustervar1 = "region")
+
+# Print out marginal effects for each var
+model_mfx
+
+# A one unit increase in the log-income is associated with a 4.72 percentage
+# point increase in happiness, while a one unit increase in the gini coefficient
+# is associated with a 21.59 percentage point decrease in happiness
 
 ```
 
@@ -185,11 +197,22 @@ predictions_ln_income = predict(probit_model_adv,
 How do the estimates change?
 
 ```{r question 4 c, eval = T, echo = T}
-# Add your code here
-
+lpm_model <- lm(happy ~ ln_income + gini, data = df)
+summary(lpm_model)
+# The results were very close, as ln_income showed a 4.72 percentage point 
+# increase in the probability of happiness, compared to 5.17 percentage points
+# in the bivariatemodel (Question 3). Similarly, the Gini coefficient in the 
+# Probit model showed a 21.59 percentage point decrease in happiness, which is 
+# very close to the 21.12 percentage point decrease found in Model 3. 
+# Both variables remained highly statistically significant (p<0.01)
 ```
 
 **d)** Which control variables are most strongly associated with happiness?\
+
+Unemployment and marriage are most strongly associated with happiness, as
+being unemployed is associated with a 14.3 percentage point decrease in the
+probability of being happy, while being married is associated with a 6.8
+percentage point increase.
 
 ### 5. Predicted Probabilities for Profiles
 
@@ -200,13 +223,44 @@ How do the estimates change?
 -   **C:** Same as A, but `ln_income` at the 75th percentile (keep `gini` at the 25th).
 
 ```{r question 5 a, echo = T, eval = T}
-# add your code here
+# Getting ln_income and gini at the 25th and 75th percentile
+inc_25 <- quantile(df$ln_income, 0.25)
+inc_75 <- quantile(df$ln_income, 0.75)
+gini_25 <- quantile(df$gini, 0.25)
+gini_75 <- quantile(df$gini, 0.75)
+
+# Creating frames for the different profiles
+prediction_profiles <- data.frame(
+  age = 30,
+  age2 = 900,
+  female = 0,
+  educ_yrs = 12,
+  married = 0,
+  unemployed = 0,
+  ln_income = c(inc_25, inc_25, inc_75),
+  gini = c(gini_25, gini_75, gini_25)
+)
+
+# Making the prediction
+predictions <- predict(probit_model_adv, newdata = prediction_profiles, type = "response")
+
 ```
 
 **b)** Interpret the differences $(B - A)$ and $(C - A)$.
 
 ```{r question 5, echo = T, eval = T}
-# add your code here
+# B - A
+predictions[2] - predictions[1]
+# Holding individual demographics and log-income constant, a 30-year-old single
+# male in a low-inequality region is 1.24 percentage points more likely to be 
+# happy than if he were in a high-inequality region.
+
+# C - A
+predictions[3] - predictions[1]
+# Holding the individual demographics and the gini coefficient constant, a 30 
+# year old single male with a high log income is 4.72 percentage points more
+# likely to be happy than with low log income.
+
 
 ```
 
@@ -215,13 +269,28 @@ How do the estimates change?
 **a)** Report the **Average Marginal Effect (AME)** of `ln_income`.
 
 ```{r question 6 a, eval = T, echo = T}
-# add your code here
+library(mfx)
+
+model_mfx <- probitmfx(happy ~ ln_income + gini + age + age2 + female + 
+                       educ_yrs + married + unemployed, 
+                       data = df, 
+                       clustervar1 = "region")
+
+# Getting the AME for ln_income
+model_mfx$mfxest["ln_income", ]
 
 ```
 
 **b)** Based on the AME, approximate the effect of a 10% income increase ($\Delta \ln(x) \approx 0.10$).
 
+A 10% income increase would result in a 0.47 percentage point increase in the
+probability of being happy (0.10 * 0.47).
+
 **c)** Explain (in words) why marginal effects can vary across individuals in non-linear models and why the AME is often reported.\
+
+The AME is reported because non linear models assume a s like curve on the data,
+so the AME offers a sample-wide summary of this effect, calculated by averaging
+the individual marginal effects across all observations.
 
 ### 7. Interaction / Heterogeneity
 
@@ -231,7 +300,20 @@ Alesina et al. discuss that inequality may affect groups differently.
 Interpret the interaction coefficient in terms of probabilities.
 
 ```{r question 7, eval = T, echo = T}
-# add your code here
+model_interaction <- probitmfx(happy ~ ln_income + gini + gini:income_z + 
+                                age + age2 + female + educ_yrs + 
+                                married + unemployed, 
+                                data = df, 
+                                clustervar1 = "region")
+
+# Print out marginal effects for each var
+model_interaction
+
+# The interaction term between the gini coefficient and income_z having a value
+# of -0.0022 means that for every 1-unit increase in the gini coefficient, 
+# the marginal effect of relative income on the probability of being happy
+# decreases by 0.22 percentage points. It is important to point out that the
+# interaction term is not statistically significant though.
 
 ```
 
@@ -239,4 +321,18 @@ Interpret the interaction coefficient in terms of probabilities.
 
 **a)** Give two limitations of interpreting coefficient on inequality causally.\
 
+One limitation of interpreting the coefficient on inequality causally is the 
+presence of omitted variable bias. Another limitation is that we do not know 
+the exact direction of the relationship; this is known as reverse causality. 
+This means we cannot be certain if inequality reduces happiness, or if unhappy
+populations create unequal economies.
+
 **b)** Write a short policy-facing interpretation (4–6 sentences) of your main result using predicted probabilities or marginal effects.\
+
+The results show that while higher income generally increases happiness, 
+regional inequality can dampen these gains. A 10% raise in income is associated
+with a 0.47 percentage point increase in the probability of happiness. However,
+the negative interaction term (−0.0022) suggests that this boost is less
+effective as inequality rises, though this specific interaction did not reach
+standard levels of statistical significance. This implies that economic growth 
+alone may not maximize public well-being if wealth gaps continue to widen.
