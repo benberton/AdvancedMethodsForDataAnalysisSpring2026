@@ -50,6 +50,18 @@ summary(df$age)
 sd(df$age)
 
 ```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  1.0000  0.6351  1.0000  1.0000 
+[1] 0.4813968
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  7.128   9.855  10.340  10.342  10.831  13.440 
+[1] 0.7156091
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.2500  0.3213  0.3559  0.3517  0.3762  0.4429 
+[1] 0.03963782
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  18.00   33.00   49.00   49.06   65.00   80.00
+[1] 18.22074
 
 **b)** Report the share of $happy$ in the full sample and by unemployment status.
 
@@ -68,6 +80,12 @@ sum(unemployed_df$happy == 1)/nrow(unemployed_df)
 sum(employed_df$happy == 1)/nrow(employed_df)
 
 ```
+Share in the full sample that are happy
+0.6351227
+Share unemployed that are happy
+0.4869371
+Share employed that are happy
+0.645083
 
 **c)** Briefly describe whether individuals in higher-inequality regions report lower happiness.
 
@@ -83,10 +101,13 @@ mean(top_q_gini$happy)
 bottom_q_gini <- df %>% filter(gini <= quantile(gini, 0.25))
 mean(bottom_q_gini$happy)
 
-# In the top quartile of income inequality, individuals are 62 percent likley 
-# to be happy compared to 64 percent of those in low income inequality
-
 ```
+Correlation between gini coefficient and happiness: -0.01666612
+Mean happiness in locations were the gini is in the top quartile: 0.6246064
+Mean happiness in locations were the gini is in the low quartile: 0.6494763
+
+In the top quartile of income inequality, individuals are 62 percent likely 
+to be happy compared to 64 percent of those in low income inequality
 
 ### 2. Linear Probability Model
 
@@ -96,6 +117,24 @@ mean(bottom_q_gini$happy)
 lpm_model <- lm(happy ~ ln_income + gini, data = df)
 summary(lpm_model)
 ```
+Call:
+lm(formula = happy ~ ln_income + gini, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-0.7992 -0.6129  0.3322  0.3729  0.5373 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  0.17466    0.01731  10.093  < 2e-16 ***
+ln_income    0.05172    0.00143  36.174  < 2e-16 ***
+gini        -0.21176    0.02581  -8.203 2.35e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4799 on 219997 degrees of freedom
+Multiple R-squared:  0.006189,	Adjusted R-squared:  0.00618 
+F-statistic:   685 on 2 and 219997 DF,  p-value: < 2.2e-16
 
 **b)** Interpret $\beta_1$ and $\beta_2$ as changes in probability.\
 
@@ -115,10 +154,13 @@ df$pred_happiness <- lpm_model$fitted.values
 # Checking amout of values outside [0, 1]
 range(df$pred_happiness)
 summary(df$pred_happiness)
-
-# I was not able to find any fitted values outside of [0, 1], as the lowest 
-# value was 0.427 and the highest was 0.7992
 ```
+[1] 0.4626760 0.7992143
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.4627  0.6093  0.6352  0.6351  0.6611  0.7992 
+
+I was not able to find any fitted values outside of [0, 1], as the lowest 
+value was 0.427 and the highest was 0.7992
 
 **d)** In one paragraph, discuss the limitations of the LPM for binary outcomes.\
 
@@ -139,6 +181,64 @@ summary(logit_model)
 summary(probit_model)
 
 ```
+Call:
+lm(formula = happy ~ ln_income + gini, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-0.7992 -0.6129  0.3322  0.3729  0.5373 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  0.17466    0.01731  10.093  < 2e-16 ***
+ln_income    0.05172    0.00143  36.174  < 2e-16 ***
+gini        -0.21176    0.02581  -8.203 2.35e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4799 on 219997 degrees of freedom
+Multiple R-squared:  0.006189,	Adjusted R-squared:  0.00618 
+F-statistic:   685 on 2 and 219997 DF,  p-value: < 2.2e-16
+
+Call:
+glm(formula = happy ~ ln_income + gini, family = binomial(link = "logit"), 
+    data = df)
+
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)    
+(Intercept) -1.441220   0.075325  -19.13  < 2e-16 ***
+ln_income    0.224502   0.006244   35.96  < 2e-16 ***
+gini        -0.917705   0.112332   -8.17 3.09e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 288716  on 219999  degrees of freedom
+Residual deviance: 287351  on 219997  degrees of freedom
+AIC: 287357
+
+Number of Fisher Scoring iterations: 4
+
+Call:
+glm(formula = happy ~ ln_income + gini, family = binomial(link = "probit"), 
+    data = df)
+
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)    
+(Intercept) -0.883207   0.046348 -19.056  < 2e-16 ***
+ln_income    0.138232   0.003837  36.027  < 2e-16 ***
+gini        -0.566437   0.069121  -8.195 2.51e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 288716  on 219999  degrees of freedom
+Residual deviance: 287351  on 219997  degrees of freedom
+AIC: 287357
+
+Number of Fisher Scoring iterations: 4
 
 **b)** Compare the signs and statistical significance of `ln_income` and `gini` across the LPM, Logit, and Probit models.\
 
@@ -173,6 +273,18 @@ summary(probit_model_adv)
 
 ```
 
+ 
+            Estimate.  Std. Error  z value     Pr(>|z|)
+(Intercept)	-0.634411	0.06095467	-10.407908	< 2.2e-16	***
+ln_income	0.125694	0.00484882	25.922537	< 2.2e-16	***
+gini	-0.575363	0.07292409	-7.889886	3.0246e-15	***
+age	-0.010357	0.00084459	-12.263019	< 2.2e-16	***
+age2	0.000113	0.00000879	12.902502	< 2.2e-16	***
+female	0.026332	0.00452784	5.815554	6.0433e-09	***
+educ_yrs	-0.000421	0.00062905	-0.668480	5.0383e-01	
+married	0.180701	0.00573471	31.510004	< 2.2e-16	***
+unemployed	-0.367967	0.01213990	-30.310523	< 2.2e-16	***
+
 **b)** Report the estimated effects of `ln_income` and `gini` using **marginal effects**.
 
 ```{r question 4 b, eval = T, echo = T}
@@ -187,11 +299,31 @@ model_mfx <- probitmfx(happy ~ ln_income + gini + age + age2 + female +
 # Print out marginal effects for each var
 model_mfx
 
-# A one unit increase in the log-income is associated with a 4.72 percentage
-# point increase in happiness, while a one unit increase in the gini coefficient
-# is associated with a 21.59 percentage point decrease in happiness
-
 ```
+Call:
+probitmfx(formula = happy ~ ln_income + gini + age + age2 + female + 
+    educ_yrs + married + unemployed, data = df, clustervar1 = "region")
+
+Marginal Effects:
+                 dF/dx   Std. Err.        z     P>|z|    
+ln_income   4.7171e-02  1.8264e-03  25.8277 < 2.2e-16 ***
+gini       -2.1593e-01  2.7388e-02  -7.8840 3.171e-15 ***
+age        -3.8869e-03  3.1650e-04 -12.2810 < 2.2e-16 ***
+age2        4.2565e-05  3.2865e-06  12.9513 < 2.2e-16 ***
+female      9.8835e-03  1.6995e-03   5.8156 6.041e-09 ***
+educ_yrs   -1.5781e-04  2.3612e-04  -0.6684    0.5039    
+married     6.7939e-02  2.1591e-03  31.4664 < 2.2e-16 ***
+unemployed -1.4342e-01  4.8301e-03 -29.6932 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+dF/dx is for discrete change for the following variables:
+
+[1] "female"     "married"    "unemployed"
+
+A one unit increase in the log-income is associated with a 4.72 percentage
+point increase in happiness, while a one unit increase in the gini coefficient
+is associated with a 21.59 percentage point decrease in happiness
 
 **c)** Compare these results to the bivariate model from Question 3.
 How do the estimates change?
@@ -199,13 +331,14 @@ How do the estimates change?
 ```{r question 4 c, eval = T, echo = T}
 lpm_model <- lm(happy ~ ln_income + gini, data = df)
 summary(lpm_model)
-# The results were very close, as ln_income showed a 4.72 percentage point 
-# increase in the probability of happiness, compared to 5.17 percentage points
-# in the bivariatemodel (Question 3). Similarly, the Gini coefficient in the 
-# Probit model showed a 21.59 percentage point decrease in happiness, which is 
-# very close to the 21.12 percentage point decrease found in Model 3. 
-# Both variables remained highly statistically significant (p<0.01)
 ```
+
+The results were very close, as ln_income showed a 4.72 percentage point 
+increase in the probability of happiness, compared to 5.17 percentage points
+in the bivariatemodel (Question 3). Similarly, the Gini coefficient in the 
+Probit model showed a 21.59 percentage point decrease in happiness, which is 
+very close to the 21.12 percentage point decrease found in Model 3. 
+Both variables remained highly statistically significant (p<0.01)
 
 **d)** Which control variables are most strongly associated with happiness?\
 
@@ -263,6 +396,8 @@ predictions[3] - predictions[1]
 
 
 ```
+[1] -0.01237929
+[1] 0.0471862
 
 ### 6. Marginal Effect of a 10% Income Increase
 
@@ -280,6 +415,8 @@ model_mfx <- probitmfx(happy ~ ln_income + gini + age + age2 + female +
 model_mfx$mfxest["ln_income", ]
 
 ```
+        dF/dx     Std. Err.             z         P>|z| 
+ 4.717105e-02  1.826375e-03  2.582770e+01 4.333178e-147 
 
 **b)** Based on the AME, approximate the effect of a 10% income increase ($\Delta \ln(x) \approx 0.10$).
 
@@ -309,13 +446,35 @@ model_interaction <- probitmfx(happy ~ ln_income + gini + gini:income_z +
 # Print out marginal effects for each var
 model_interaction
 
-# The interaction term between the gini coefficient and income_z having a value
-# of -0.0022 means that for every 1-unit increase in the gini coefficient, 
-# the marginal effect of relative income on the probability of being happy
-# decreases by 0.22 percentage points. It is important to point out that the
-# interaction term is not statistically significant though.
-
 ```
+Call:
+probitmfx(formula = happy ~ ln_income + gini + gini:income_z + 
+    age + age2 + female + educ_yrs + married + unemployed, data = df, 
+    clustervar1 = "region")
+
+Marginal Effects:
+                    dF/dx   Std. Err.        z     P>|z|    
+ln_income      4.8112e-02  3.8383e-03  12.5347 < 2.2e-16 ***
+gini          -2.1612e-01  2.7280e-02  -7.9225 2.329e-15 ***
+age           -3.8867e-03  3.1644e-04 -12.2824 < 2.2e-16 ***
+age2           4.2563e-05  3.2861e-06  12.9525 < 2.2e-16 ***
+female         9.8832e-03  1.6994e-03   5.8156 6.043e-09 ***
+educ_yrs      -1.4064e-04  2.4219e-04  -0.5807    0.5614    
+married        6.7940e-02  2.1599e-03  31.4554 < 2.2e-16 ***
+unemployed    -1.4350e-01  4.8708e-03 -29.4612 < 2.2e-16 ***
+gini:income_z -2.1883e-03  6.9799e-03  -0.3135    0.7539    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+dF/dx is for discrete change for the following variables:
+
+[1] "female"     "married"    "unemployed"
+
+The interaction term between the gini coefficient and income_z having a value
+of -0.0022 means that for every 1-unit increase in the gini coefficient, 
+the marginal effect of relative income on the probability of being happy
+decreases by 0.22 percentage points. It is important to point out that the
+interaction term is not statistically significant though.
 
 ### 8. Policy Communication and Limitations
 
