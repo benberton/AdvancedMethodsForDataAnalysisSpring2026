@@ -122,8 +122,10 @@ Holding precipitation constant, a one unit increase in Celsius is
 associated with a 0.003 decrease in log GDP per capita growth.
 
 **b)** Explain why clustered standard errors at the country level are appropriate for this specification.\
-Clusting standard errors at the country level is important, as without it, there
-is autocorrelation between years of the same country.
+Clustering standard errors at the country level is important, as without it, there
+is autocorrelation in the error terms between years for the same country.
+Without it, the standard errors would be underestimated, inflating the 
+statistical significance.
 
 
 ### 4. Country Fixed Effects
