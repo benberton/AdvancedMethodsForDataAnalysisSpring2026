@@ -1,0 +1,185 @@
+---
+title: "Assignment 2: Panel Data – Temperature Shocks and Economic Growth"
+author: "Advanced Methods for Data Analysis in Public Policy Research FS 26 –-- ETH Zürich"
+output: html_document
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+> **Topic**: Temperature Shocks and Economic Growth\
+> **Group Name**: *Best Friends Forever and Ever*\
+> **Authors**: *Ben Berton, Adam Pederson*\
+> **Date**: *DD-MM-YYYY*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+### Setup
+
+```{r data setup, eval = T, echo = T, results = 'hide', message=F, warning=F}
+# import all needed packages here
+library(dplyr)
+
+# load the data. Place the data in the same folder as your markdown script.
+df <- read.csv('climate_growth_teaching.csv')
+```
+
+### 1. Panel Structure
+
+**a)** Is the dataset a balanced panel? Explain how you check.
+
+```{r question 1 a, eval = T, echo = T}
+
+# multiplying the number of countries by the number of years
+expected_rows = length(unique(df$country)) * length(unique(df$year))
+print(expected_rows)
+
+# getting the total number of actual rows
+total_rows = nrow(df)
+print(total_rows)
+```
+No, it is not balanced, as there are 9945 expected rows but only 9655 actual rows.
+
+**b)** Report the number of countries and the average number of years observed per country.
+
+```{r question 1 b, eval = T, echo = T}
+# getting the number of countries
+number_of_countries = length(unique(df$country))
+print(number_of_countries)
+
+# Getting the number of years observed for each country
+country_obs <- df %>%
+  group_by(country) %>%
+  summarise(
+    unique_years = n_distinct(year)
+  )
+
+# Getting the average number of years per country
+mean(country_obs$unique_years)
+```
+There are on average 49.51282 years observed per country
+
+### 2. Descriptive Statistics
+
+**a)** Report summary statistics for `gdp_growth` and `temp_c` (min, max, mean, sd; and selected percentiles).
+
+```{r question 2 a, eval = T, echo = T}
+summary(df$gdp_growth)
+
+summary(df$temp_c)
+
+```
+For gdp_growth:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-0.204053 -0.094437 -0.031397 -0.049745 -0.002289  0.057988 
+
+For temp_c:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ -1.383  12.985  17.492  17.919  22.528  39.072 
+
+**b)** Pick one country and plot `temp_c` over time. Briefly describe the pattern.
+
+```{r question 2 b, eval = T, echo = T}
+# install.packages("ggplot2")
+library(ggplot2)
+
+# filter by country 1
+c_1_obs <- df %>% filter(country == "Country 1")
+ggplot(data = c_1_obs) +
+  geom_line(aes(x = year, y = temp_c), color = "red") +
+  labs(
+    title = "Temperature Over Time for Country 1",
+    x = "Time",
+    y = "Temperature (°C)"
+  )
+```
+There is not a strong pattern in the data, although tempuratures do appear to 
+fluctuate to more high and low extremes from the 1990s onwards. In general, 
+annual average tempuratures for country 1 are around 18 degrees.
+
+
+### 3. Pooled Regression with Clustering
+
+**a)** Regress `gdp_growth` on `temp_c` and `precip_mm` using pooled OLS. Use standard errors clustered at the country level. Interpret the coefficient on `temp_c`.
+
+```{r question 3 a, eval = T, echo = T}
+# install.packages("fixest")
+library(fixest)
+ols_pooled = feols(gdp_growth ~ temp_c + precip_mm, data = df, cluster = ~country)
+summary(ols_pooled)
+```
+	
+             Estimate.      Std. Error.    t value.    Pr(>|t|)
+(Intercept)	 0.01698161	    0.01249030.  	 1.35958	  1.7554e-01	
+temp_c.bb 	-0.00316898.  	0.00058389. 	-5.42734	  1.6946e-07	***
+precip_mm 	-0.00000849	    0.00000674. 	-1.26060	  2.0897e-01
+
+Holding precipitation constant, a one unit increase in Celsius is 
+associated with a 0.003 decrease in log GDP per capita growth.
+
+**b)** Explain why clustered standard errors at the country level are appropriate for this specification.\
+Clusting standard errors at the country level is important, as without it, there
+is autocorrelation between years of the same country.
+
+
+### 4. Country Fixed Effects
+
+**a)** Estimate a fixed effects model with country FE:
+$$gdp\_growth_{it} = \alpha_i + \beta \, temp\_c_{it} + \gamma \, precip\_mm_{it} + u_{it}$$
+
+```{r question 4 a, eval = T, echo = T}
+# add your code here
+
+```
+
+**b)** Compare $\beta$ to the pooled estimate. Why might they differ?\
+
+**c)** In one paragraph, explain what country FE control for.\
+
+### 5. Two-Way Fixed Effects
+
+**a)** Add year fixed effects to the model in (4). Compare the temp coefficient to (4).
+
+```{r question 5 a, eval = T, echo = T}
+# add your code here
+
+```
+
+**b)** Explain what year FE absorb in this context.\
+
+### 6. Temperature Shocks and Heterogeneity
+
+Dell et al. emphasize within-country shocks and heterogeneous effects by income.
+
+**a)** Regress `gdp_growth` on `temp_dev` and `precip_dev` with country FE and year FE.
+
+```{r question 6 a, eval = T, echo = T}
+# add your code here
+
+```
+
+**b)** Add the interaction term `temp_dev_poor`. Interpret the coefficient on `temp_dev_poor`.
+
+```{r question 6 b, eval = T, echo = T}
+# add your code here
+
+```
+
+### 7. Robustness / Influential Units
+
+**a)** Identify one or two potentially influential countries and re-estimate your preferred model excluding them. Do results change meaningfully? Explain briefly.
+
+```{r question 7 a, eval = T, echo = T}
+# add your code here
+
+```
+
+### 8. Conclusion
+
+**a)** Summarize your main empirical conclusion in 2--3 sentences.\
+
+**b)** Give one caveat about interpreting panel FE estimates as causal in this setting.\
