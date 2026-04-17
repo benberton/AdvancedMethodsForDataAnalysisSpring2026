@@ -1,0 +1,266 @@
+---
+title: "Assignment 3: IV Regression — Family Size and Children's Education"
+author: "Advanced Methods for Data Analysis in Public Policy Research FS 26 –-- ETH Zürich"
+output: html_document
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+> **Topic**: Family Size and Children's Education\
+> **Group Name**: *Best Friends Forever and Ever*\
+> **Authors**: * Ben Berton, Adam Pedersen*\
+> **Date**: *15-04-2026*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+### Setup
+
+```{r data setup, eval = T, echo = T, results = 'hide', message=F, warning=F}
+# import all needed packages here
+library(dplyr)
+library(haven)
+
+# load the data. Place the data in the same folder as your markdown script.
+df <- read_dta('family_size.dta')
+```
+
+### 1. Descriptive Statistics
+
+**a)** Summarize `educ_yrs` (min, max, mean, sd) and comment on the distribution.
+
+```{r question 1 a, eval = T, echo = T}
+summary(df$educ_yrs)
+
+```
+   Min.    1st Qu.   Median    Mean    3rd Qu.    Max. 
+   1.00    8.00      9.00      9.44    11.00      17.00 
+
+**b)** What share of children are in families with `morethan2=1`?
+
+```{r question 1 b, eval = T, echo = T}
+sum(df$morethan2 == 1) / length(df$morethan2)
+
+```
+**Answer:** 55.1% of children have mothers with 3+ children.
+
+### 2. OLS
+
+**a)** Regress `educ_yrs` on `morethan2` using OLS. Interpret the coefficient.
+
+```{r question 2 a, eval = T, echo = T}
+model = lm(educ_yrs ~ morethan2, data = df)
+summary(model)
+
+```
+Call:
+lm(formula = educ_yrs ~ morethan2, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8.3829 -1.3829 -0.3829  1.4893  7.6171 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  9.510708   0.001444 6584.65   <2e-16 ***
+morethan2   -0.127767   0.001947  -65.64   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.677 on 3000184 degrees of freedom
+Multiple R-squared:  0.001434,	Adjusted R-squared:  0.001434 
+F-statistic:  4308 on 1 and 3000184 DF,  p-value: < 2.2e-16
+
+**Answer:** On average, children whose mothers have three or more children have 0.13 fewer years of education than children from smaller families.
+ 
+ 
+**b)** Explain why the OLS estimate in (2) may not identify the causal effect of family size on education.\
+**Answer:** The OLS estimate in (2) may not identify the causal effect, as family size is an endogenous variable with respect to education. There are unobserved variables, like socioeconomic status, that influence both the expected years of education and the expected number of children for a mother. 
+
+### 3. Instrument Relevance
+
+**a)** Summarize `samesex12`.
+
+```{r question 4 a, eval = T, echo = T}
+summary(df$samesex12)
+
+```
+ Min.    1st Qu.   Median   Mean    3rd Qu.    Max. 
+ 0.000   0.000     1.000    0.511   1.000      1.000 
+
+**b)** Estimate the first stage: regress `morethan2` on `samesex12`. How large is the effect? Is it statistically significant?
+
+```{r question 4 b, eval = T, echo = T}
+inst_model = lm(morethan2 ~ samesex12, data=df)
+summary(inst_model)
+
+```
+
+Call:
+lm(formula = morethan2 ~ samesex12, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-0.5874 -0.5122  0.4126  0.4878  0.4878 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 0.5121683  0.0004095  1250.7   <2e-16 ***
+samesex12   0.0752030  0.0005729   131.3   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.496 on 3000184 degrees of freedom
+Multiple R-squared:  0.005711,	Adjusted R-squared:  0.005711 
+F-statistic: 1.723e+04 on 1 and 3000184 DF,  p-value: < 2.2e-16
+
+**Answer:** On average, a mother's first two children having the same sex raises the likelihood of having one or more additional children by 7.5 percentage points. It is highly statistically significant with a p < 0.001.
+
+**c)** Report and interpret a weak-instrument diagnostic.
+
+```{r question 4 c, eval = T, echo = T}
+summary(inst_model)
+
+```
+
+F-statistic: 1.723e+04 on 1 and 3000184 DF,  p-value: < 2.2e-16
+**Answer:** The f-statistic is 17,230, so the instrument is strong.
+
+### 4. Instrument Validity
+
+**a)** Discuss whether `samesex12` is a valid instrument.\
+**Answer:** 'samesex12' is a valid instrument, as it meets the two criteria for a valid instrument. The first criteria, corr(Zi,Xi) ≠ 0, is proven in the first stage model, as the results show a positive and highly significant relationship with 'morethan2', with an F-statistic of 17,230, proving a strong correlation exists. The second criteria, corr(Zi,ui) = 0, is true, as the gender of a baby is completely random and is thus not correlated with the unobserved error term.
+
+### 5. TSLS / 2SLS Estimation
+
+**a)** Estimate the causal effect of `morethan2` on `educ_yrs` using TSLS with `samesex12` as the instrument. Interpret the estimate.
+
+```{r question 6 a, eval = T, echo = T}
+#install.packages("AER")
+library(AER)
+
+iv_model <- ivreg(educ_yrs ~ morethan2 | samesex12, data = df)
+
+summary(iv_model)
+
+```
+Call:
+ivreg(formula = educ_yrs ~ morethan2 | samesex12, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8.3577 -1.3577 -0.3577  1.4584  7.6423 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  9.54163    0.01422  671.15  < 2e-16 ***
+morethan2   -0.18392    0.02576   -7.14 9.36e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.677 on 3000184 degrees of freedom
+Multiple R-Squared: 0.001157,	Adjusted R-squared: 0.001157 
+Wald test: 50.97 on 1 and 3000184 DF,  p-value: 9.361e-13 
+
+**Answer:** On average, a child's mother having 3+ children lowers their expected years of education by 0.18 years.
+### 6. Controls and Precision
+
+**a)** Re-estimate TSLS adding the controls listed above. Do results change?
+
+```{r question 7 a, eval = T, echo = T}
+iv_model_ctrls <- ivreg(educ_yrs ~ morethan2 + child_age + child_sex + 
+                          mom_age + mom_educ + birth_order + race3 + hispan + year | 
+                          samesex12 + child_age + child_sex + 
+                          mom_age + mom_educ + birth_order + race3 + hispan + year, 
+                        data = df)
+
+summary(iv_model_controls)
+```
+Call:
+ivreg(formula = educ_yrs ~ morethan2 | samesex12 + samesex12, 
+    data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8.3577 -1.3577 -0.3577  1.4584  7.6423 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  9.54163    0.01422  671.15  < 2e-16 ***
+morethan2   -0.18392    0.02576   -7.14 9.36e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.677 on 3000184 degrees of freedom
+Multiple R-Squared: 0.001157,	Adjusted R-squared: 0.001157 
+Wald test: 50.97 on 1 and 3000184 DF,  p-value: 9.361e-13 
+
+**Answer:** The coefficient did not change substantially (remaining near -0.18). This stability suggests that the instrument, samesex12, is indeed exogenous. If the instrument were correlated with the omitted variables (like mother's education), moving those variables from the error term to the "controls" list would have caused the coefficient to shift significantly.
+
+**b)** Why might controls help (or not) in IV?\
+**Answer:** Controls help by soaking up "seen" noise (like mother’s education), which makes the model more precise and shrinks the standard errors. They also ensure the instrument is valid by accounting for factors that might prevent the instrument from being truly random.
+
+However, they might not help if they are too similar to the instrument. If a control "steals" the instrument's explanatory power, it creates a weak instrument (low F-statistic), making the causal estimate unreliable.
+
+### 7. Balance / Exogeneity Checks
+
+**a)** Can we test the exclusion restriction directly? Explain.\
+**Answer:** No, we cannot test the exclusion restriction directly, as the error captured by the instrument is unseen, meaning there is no way to mathematically prove there is no correlation.
+
+**b)** Run at least two balance regressions of predetermined covariates (e.g., mother education, mother age, race/ethnicity) on `samesex12` and interpret.
+
+```{r question 8 b, eval = T, echo = T}
+balance_educ <- lm(mom_educ ~ samesex12, data = df)
+summary(balance_educ)
+
+balance_age <- lm(mom_age ~ samesex12, data = df)
+summary(balance_age)
+
+```
+Call:
+lm(formula = mom_educ ~ samesex12, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-5.9885 -1.9801  0.0199  2.0199  4.0199 
+
+Coefficients:
+             Estimate Std. Error  t value Pr(>|t|)    
+(Intercept) 13.988528   0.002194 6375.593  < 2e-16 ***
+samesex12   -0.008422   0.003069   -2.744  0.00607 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.657 on 3000184 degrees of freedom
+Multiple R-squared:  2.51e-06,	Adjusted R-squared:  2.177e-06 
+F-statistic:  7.53 on 1 and 3000184 DF,  p-value: 0.006068
+
+
+Call:
+lm(formula = mom_age ~ samesex12, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-7.5124 -3.5124  0.4876  3.5025  7.5025 
+
+Coefficients:
+             Estimate Std. Error  t value Pr(>|t|)    
+(Intercept) 37.512391   0.003805 9857.731  < 2e-16 ***
+samesex12   -0.014897   0.005323   -2.799  0.00513 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 4.609 on 3000184 degrees of freedom
+Multiple R-squared:  2.61e-06,	Adjusted R-squared:  2.277e-06 
+F-statistic: 7.832 on 1 and 3000184 DF,  p-value: 0.005134
+
+**Answer:** Both the mother’s education and the mother’s age are significantly correlated to the instrument. This means that the instrument is not completely exogenous, as it correlates with the error term.
+
+### 8. LATE Interpretation
+
+**a)** Interpret your IV estimate as a Local Average Treatment Effect (LATE). Who are the **compliers** in this setting?\
+**Answer:** The IV estimate identifies the Local Average Treatment Effect (LATE). This is the causal effect of having a third child specifically for the compliers.The compliers are parents who had a third child only because their first two children were of the same sex.
