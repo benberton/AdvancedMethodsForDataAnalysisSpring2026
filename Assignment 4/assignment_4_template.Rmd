@@ -1,0 +1,167 @@
+---
+title: "Assignment 4: Generalized DiD with Cohort Exposure – Indonesia School Construction"
+author: "Advanced Methods for Data Analysis in Public Policy Research FS 26 –- ETH Zürich"
+output: html_document
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+> **Topic**: Generalized DiD with Cohort Exposure – Indonesia School Construction\
+> **Group Name**: *Best Friends Forever and Ever*\
+> **Authors**: *Ben Berton, Adam Pedersen*\
+> **Date**: *01-05-2026*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+### Setup
+
+```{r data setup, eval = T, echo = T, results = 'hide', message=F, warning=F}
+# import all needed packages here
+library(dplyr)
+
+# load the data. Place the data in the same folder as your markdown script.
+df <- read.csv('indonesia_school_construction_teaching.csv')
+```
+
+*Hint*: Because `school_intensity` varies at the district level, cluster standard errors by district throughout.
+
+### 1. Descriptives and Intuition
+
+**a)** Summarize the distribution of `school_intensity` across districts (mean, sd, min, max). Are there districts with zero intensity?
+
+```{r question 1 a, eval = T, echo = T}
+summary(df$school_intensity)
+sd(df$school_intensity)
+sum(df$school_intensity == 0)
+```
+**Answer:** The Mean district-level school construction intensity is 3 per 1,000 children with a standard deviation of 1.4 schools. There are 52 districts with 0 school intensity.
+
+
+**b)** Compare mean `years_schooling` for exposed vs non-exposed cohorts. Do the same for `ln_wage`.
+
+```{r question 1 b, eval = T, echo = T}
+
+print("Mean Years Schooling:")
+non_exposed_mean_yrs = mean(df$years_schooling[df$exposed == 0])
+exposed_mean_yrs = mean(df$years_schooling[df$exposed == 1])
+print(non_exposed_mean_yrs)
+print(exposed_mean_yrs)
+print(exposed_mean_yrs - non_exposed_mean_yrs)
+
+print("Mean Wage:")
+non_exposed_mean_wage = mean(df$ln_wage[df$exposed == 0])
+exposed_mean_wage = mean(df$ln_wage[df$exposed == 1])
+print(non_exposed_mean_wage)
+print(exposed_mean_wage)
+print(exposed_mean_wage - non_exposed_mean_wage)
+```
+**Answer:** The mean years of schooling for the exposed cohort is 1.55 years higher than that for the non-exposed cohort (7.4 from 5.9). The log adult wage is 0.16 higher for the exposed cohort than that of the non-exposed cohort (1.99 from 1.82).
+
+**c)** Explain why older cohorts can serve as a control group and what variation identifies the program effect.\
+**Answer:** Older cohorts serve as a control group because they were already past the age of primary school completion (12 years old) when the program was initiated. Since their schooling was already finalized, their outcomes could not have been affected by the new infrastructure, providing a baseline for each district. Because the program was applied with different intensities across districts, the program effect is identified by the interaction between district-level intensity and cohort exposure.
+
+### 2. Regression Setup (Generalized DiD)
+
+**a)** Estimate the baseline regression for schooling:
+$$years\_schooling_{dc} = \alpha_d + \gamma_c + \beta \, (exposed_c \times school\_intensity_d) + \varepsilon_{dc},$$
+where $\alpha_d$ are district fixed effects and $\gamma_c$ are cohort fixed effects.
+
+```{r question 2 a, eval = T, echo = T}
+library(fixest)
+model_feols <- feols(years_schooling ~ exposed:school_intensity | district + birth_cohort, 
+                     data = df, 
+                     cluster = ~district)
+
+```
+
+**b)** Explain the interpretation of $\beta$.\
+**Answer:** Beta is the causal effect. It represents the additional increase in education for the younger cohort for every one-unit increase in school intensity, compared to the older cohort in that same district.
+
+**c)** State the identifying assumption in this context (a "parallel trends" style assumption).\
+**Answer:** The identifying assumption is the parallel trends assumption. In this context, it means that if the government hadn't built any schools, the growth in education between the old and young cohorts would have been the same across all districts.
+
+### 3. Baseline Estimates: Schooling
+
+**a)** Estimate the model in (2). Use district and cohort fixed effects.
+
+```{r question 3 a, eval = T, echo = T}
+summary(model_feols)
+```
+
+**b)** Report $\hat{\beta}$ and interpret it as the effect of a one-unit increase in intensity for exposed cohorts.\
+**Answer:** Controlling for fixed effects, the estimated coefficient is 0.526. This indicates that for the exposed younger cohort, an increase of one school per 1,000 children in their district resulted in an average increase of 0.526 years of schooling compared to the non-exposed older cohort.
+
+**c)** Translate the estimate into the effect of 1 additional school per 1,000 children (same unit as intensity).\
+**Answer:** For the younger cohort, building one additional school per 1,000 children in their district resulted in an average increase of 0.526 years of schooling compared to the older cohort.
+
+### 4. Adding Controls and Robustness
+
+**a)** Add `baseline_dev` and `urban_share` to the regression (still with district and cohort fixed effects).
+
+```{r question 4 a, eval = T, echo = T}
+model_feols_new <- feols(years_schooling ~ baseline_dev + urban_share + exposed:school_intensity | district + birth_cohort, 
+                     data = df, 
+                     cluster = ~district)
+summary(model_feols_new)
+```
+
+**b)** Does $\hat{\beta}$ change meaningfully? Discuss.\
+**Answer:** The coefficient remains identical because baseline_dev and urban_share were dropped from the model due to perfect multicollinearity with the district fixed effects. Since these variables are time-invariant (measured at the district level and constant across cohorts), their explanatory power was already fully captured by the district fixed effects.
+
+**c)** Do these controls change the identifying assumption?\
+**Answer:** The controls do not change the identifying assumption because they were omitted from the model due to collinearity. Since these variables were absorbed by the district fixed effects, the regression remains mathematically identical to the baseline model, which still relies on the standard Parallel Trends Assumption.
+
+### 5. Labor Market Outcome: Wages
+
+**a)** Repeat the analysis for `ln_wage` as the outcome using the same specification.
+
+```{r question 5 a, eval = T, echo = T}
+model_feols_new <- feols(ln_wage ~ exposed:school_intensity | district + birth_cohort, 
+                     data = df, 
+                     cluster = ~district)
+summary(model_feols_new)
+```
+
+**b)** Report $\hat{\beta}_{wage}$ and interpret it.\
+**Answer:** The estimated coefficient is 0.050922. Controlling for fixed effects, adding an additional school per 1,000 children for a district in the younger cohort is associated with a 0.0509 unit increase in log wages, which is approximately a 5.1 percent increase in expected mean income.
+
+**c)** Translate $\hat{\beta}_{wage}$ into an approximate percent wage effect (hint: $100 \times \hat{\beta}_{wage}$ is a good approximation for small values).\
+**Answer:** The coefficient translates to an approximate wage effect of 5.1 percent.
+
+### 6. Falsification / Placebo
+
+**a)** Implement a placebo test by restricting the sample to older cohorts (e.g., $birth\_cohort \leq 1960$) and re-estimate the schooling model.
+
+```{r question 6 a, eval = T, echo = T}
+df_placebo <- df %>% 
+  filter(birth_cohort <= 1960) %>%
+  mutate(fake_exposed = ifelse(birth_cohort > 1955, 1, 0)) # those born 1955 - 1960 are the placebo treatment
+
+model_placebo <- feols(years_schooling ~ fake_exposed:school_intensity | district + birth_cohort, 
+                       data = df_placebo, 
+                       cluster = ~district)
+
+summary(model_placebo)
+```
+
+**b)** Report and interpret the results.\
+**Answer:** The estimated coefficient for the placebo interaction (fake_exposed:school_intensity) is 0.02724 and is statistically insignificant. This indicates that school construction intensity had no measurable impact on the schooling of cohorts born before 1960, who were already too old to be affected by the policy.
+
+**c)** What would you expect to find if the design is valid?\
+**Answer:** If the design is valid, we would expect to find a coefficient that is close to zero and statistically insignificant.
+
+### 7. Policy Interpretation and Limitations
+
+**a)** Provide a brief policy-facing interpretation (4--6 sentences) of your preferred estimate.\
+**Answer:** Based on the Difference-in-Differences analysis, the primary school construction program significantly improved both educational and economic outcomes for exposed students. Controlling for district and birth-cohort fixed effects, the addition of one school per 1,000 children increased the expected years of education by approximately 0.53 years. This educational gain translated into a labor market benefit, with an estimated 5.1% increase in mean wages for the same increase in school intensity. These results indicate that the program successfully targeted human capital development, yielding long-term financial returns for the treated population. The findings are further validated by a placebo test, which confirmed that these gains were unique to the cohorts eligible for the program rather than a reflection of pre-existing regional trends.
+
+**b)** List one threat to identification.\
+**Answer:** One threat to identification is omitted variable bias from time-varying regional shocks that correlate with school construction. While the fixed effects account for constant district traits, if districts receiving more schools also benefited from other simultaneous investments, the estimated effect might overstate the impact of the schools alone by picking up the benefits of these other programs.
+
+**c)** List one external validity concern (generalizability).\
+**Answer:** A major concern is diminishing marginal returns. Because baseline education was low (roughly 5.9 years), new schools had a large impact. In a modern setting where primary enrollment is already high, building more schools likely wouldn't produce the same dramatic increase in schooling or wages.

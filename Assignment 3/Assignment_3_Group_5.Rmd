@@ -38,9 +38,6 @@ summary(df$educ_yrs)
 sd(df$educ_yrs)
 
 ```
-   Min.    1st Qu.   Median    Mean    3rd Qu.    Max. 
-   1.00    8.00      9.00      9.44    11.00      17.00 
-   [1] 1.678349
 
 **Answer:** The distribution of education years is slightly right-skewed, with a mean of 9.44 being higher than the median of 9.00 and a standard deviation of 1.68. Most observations are concentrated between 8 and 11 years, indicating that while the majority of the sample has a basic-to-mid-level education, a small group of high-attaining individuals is pulling the average up.
 
@@ -62,23 +59,6 @@ model = lm(educ_yrs ~ morethan2, data = df)
 summary(model)
 
 ```
-Call:
-lm(formula = educ_yrs ~ morethan2, data = df)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--8.3829 -1.3829 -0.3829  1.4893  7.6171 
-
-Coefficients:
-             Estimate Std. Error t value Pr(>|t|)    
-(Intercept)  9.510708   0.001444 6584.65   <2e-16 ***
-morethan2   -0.127767   0.001947  -65.64   <2e-16 ***
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 1.677 on 3000184 degrees of freedom
-Multiple R-squared:  0.001434,	Adjusted R-squared:  0.001434 
-F-statistic:  4308 on 1 and 3000184 DF,  p-value: < 2.2e-16
 
 **Answer:** On average, children whose mothers have three or more children have 0.13 fewer years of education than children from smaller families.
  
@@ -94,8 +74,6 @@ F-statistic:  4308 on 1 and 3000184 DF,  p-value: < 2.2e-16
 summary(df$samesex12)
 
 ```
- Min.    1st Qu.   Median   Mean    3rd Qu.    Max. 
- 0.000   0.000     1.000    0.511   1.000      1.000 
 
 **b)** Estimate the first stage: regress `morethan2` on `samesex12`. How large is the effect? Is it statistically significant?
 
@@ -104,24 +82,6 @@ inst_model = lm(morethan2 ~ samesex12, data=df)
 summary(inst_model)
 
 ```
-
-Call:
-lm(formula = morethan2 ~ samesex12, data = df)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--0.5874 -0.5122  0.4126  0.4878  0.4878 
-
-Coefficients:
-             Estimate Std. Error t value Pr(>|t|)    
-(Intercept) 0.5121683  0.0004095  1250.7   <2e-16 ***
-samesex12   0.0752030  0.0005729   131.3   <2e-16 ***
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 0.496 on 3000184 degrees of freedom
-Multiple R-squared:  0.005711,	Adjusted R-squared:  0.005711 
-F-statistic: 1.723e+04 on 1 and 3000184 DF,  p-value: < 2.2e-16
 
 **Answer:** On average, a mother's first two children having the same sex raises the likelihood of having one or more additional children by 7.5 percentage points. It is highly statistically significant with a p < 0.001.
 
@@ -155,23 +115,6 @@ iv_model <- ivreg(educ_yrs ~ morethan2 | samesex12, data = df)
 summary(iv_model)
 
 ```
-Call:
-ivreg(formula = educ_yrs ~ morethan2 | samesex12, data = df)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--8.3577 -1.3577 -0.3577  1.4584  7.6423 
-
-Coefficients:
-            Estimate Std. Error t value Pr(>|t|)    
-(Intercept)  9.54163    0.01422  671.15  < 2e-16 ***
-morethan2   -0.18392    0.02576   -7.14 9.36e-13 ***
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 1.677 on 3000184 degrees of freedom
-Multiple R-Squared: 0.001157,	Adjusted R-squared: 0.001157 
-Wald test: 50.97 on 1 and 3000184 DF,  p-value: 9.361e-13 
 
 **Answer:** On average, a child's mother having 3+ children lowers their expected years of education by 0.18 years.
 
@@ -188,35 +131,6 @@ iv_model_ctrls <- ivreg(educ_yrs ~ morethan2 + child_age + child_sex +
 
 summary(iv_model_ctrls)
 ```
-
-Call:
-ivreg(formula = educ_yrs ~ morethan2 + child_age + child_sex + 
-    mom_age + mom_educ + birth_order + race3 + hispan + year | 
-    samesex12 + child_age + child_sex + mom_age + mom_educ + 
-        birth_order + race3 + hispan + year, data = df)
-
-Residuals:
-      Min        1Q    Median        3Q       Max 
--6.388854 -0.836621 -0.001011  0.836192  6.110852 
-
-Coefficients:
-              Estimate Std. Error  t value Pr(>|t|)    
-(Intercept) -3.116e+01  2.922e-01 -106.638   <2e-16 ***
-morethan2   -3.701e-02  2.439e-02   -1.517    0.129    
-child_age    3.500e-01  2.867e-04 1220.563   <2e-16 ***
-child_sex    1.004e-03  1.432e-03    0.701    0.483    
-mom_age     -1.682e-04  1.553e-04   -1.083    0.279    
-mom_educ     2.498e-01  2.694e-04  927.017   <2e-16 ***
-birth_order -1.246e-01  5.324e-03  -23.414   <2e-16 ***
-race3       -3.095e-02  8.889e-04  -34.812   <2e-16 ***
-hispan      -2.518e-01  2.065e-03 -121.975   <2e-16 ***
-year         1.510e-02  1.461e-04  103.319   <2e-16 ***
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 1.24 on 3000176 degrees of freedom
-Multiple R-Squared: 0.4542,	Adjusted R-squared: 0.4542 
-Wald test: 2.773e+05 on 9 and 3000176 DF,  p-value: < 2.2e-16
 
 **Answer:** The coefficient changed significantly, shrinking from -0.18 to -0.037, and it is no longer statistically significant (p=0.129). This tells us that in the previous model, the instrument was likely picking up explanatory power from variables that were stuck in the error term. Specifically, factors like mother’s education and child’s age were originally part of the unobserved noise.
 
@@ -241,42 +155,6 @@ balance_age <- lm(mom_age ~ samesex12, data = df)
 summary(balance_age)
 
 ```
-Call:
-lm(formula = mom_educ ~ samesex12, data = df)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--5.9885 -1.9801  0.0199  2.0199  4.0199 
-
-Coefficients:
-             Estimate Std. Error  t value Pr(>|t|)    
-(Intercept) 13.988528   0.002194 6375.593  < 2e-16 ***
-samesex12   -0.008422   0.003069   -2.744  0.00607 ** 
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 2.657 on 3000184 degrees of freedom
-Multiple R-squared:  2.51e-06,	Adjusted R-squared:  2.177e-06 
-F-statistic:  7.53 on 1 and 3000184 DF,  p-value: 0.006068
-
-
-Call:
-lm(formula = mom_age ~ samesex12, data = df)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--7.5124 -3.5124  0.4876  3.5025  7.5025 
-
-Coefficients:
-             Estimate Std. Error  t value Pr(>|t|)    
-(Intercept) 37.512391   0.003805 9857.731  < 2e-16 ***
-samesex12   -0.014897   0.005323   -2.799  0.00513 ** 
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 4.609 on 3000184 degrees of freedom
-Multiple R-squared:  2.61e-06,	Adjusted R-squared:  2.277e-06 
-F-statistic: 7.832 on 1 and 3000184 DF,  p-value: 0.005134
 
 **Answer:** Both the mother’s education and the mother’s age are significantly correlated to the instrument. This means that the instrument is not completely exogenous, as it correlates with the error term. While statistically significant, the magnitudes are so small that the covariates are practically balanced.
 
