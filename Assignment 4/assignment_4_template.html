@@ -442,16 +442,16 @@ model_feols &lt;- feols(years_schooling ~ exposed:school_intensity | district + 
                      data = df, 
                      cluster = ~district)</code></pre>
 <p><strong>b)</strong> Explain the interpretation of <span class="math inline">\(\beta\)</span>.<br />
-<strong>Answer:</strong> Beta is the causal effect. It represents the
-additional increase in education for the younger cohort for every
-one-unit increase in school intensity, compared to the older cohort in
-that same district.</p>
+<strong>Answer:</strong> Beta is the causal effect under the identifying
+assumptions. It represents the additional increase in education for the
+younger cohort for every one-unit increase in school intensity, compared
+to the older cohort in that same district.</p>
 <p><strong>c)</strong> State the identifying assumption in this context
 (a “parallel trends” style assumption).<br />
 <strong>Answer:</strong> The identifying assumption is the parallel
-trends assumption. In this context, it means that if the government
-hadn’t built any schools, the growth in education between the old and
-young cohorts would have been the same across all districts.</p>
+trends assumption. In the absence of the program, differences in
+schooling between younger and older cohorts would not systematically
+vary with school construction intensity across districts.</p>
 </div>
 <div id="baseline-estimates-schooling" class="section level3">
 <h3>3. Baseline Estimates: Schooling</h3>
@@ -598,12 +598,12 @@ for district and birth-cohort fixed effects, the addition of one school
 per 1,000 children increased the expected years of education by
 approximately 0.53 years. This educational gain translated into a labor
 market benefit, with an estimated 5.1% increase in mean wages for the
-same increase in school intensity. These results indicate that the
-program successfully targeted human capital development, yielding
-long-term financial returns for the treated population. The findings are
-further validated by a placebo test, which confirmed that these gains
-were unique to the cohorts eligible for the program rather than a
-reflection of pre-existing regional trends.</p>
+same increase in school intensity. The results suggest the program
+improved human capital development, yielding long-term financial returns
+for the treated population. The findings are further validated by a
+placebo test, which confirmed that these gains were unique to the
+cohorts eligible for the program rather than a reflection of
+pre-existing regional trends.</p>
 <p><strong>b)</strong> List one threat to identification.<br />
 <strong>Answer:</strong> One threat to identification is omitted
 variable bias from time-varying regional shocks that correlate with
@@ -615,10 +615,10 @@ programs.</p>
 <p><strong>c)</strong> List one external validity concern
 (generalizability).<br />
 <strong>Answer:</strong> A major concern is diminishing marginal
-returns. Because baseline education was low (roughly 5.9 years), new
-schools had a large impact. In a modern setting where primary enrollment
-is already high, building more schools likely wouldn’t produce the same
-dramatic increase in schooling or wages.</p>
+returns. Because baseline education was low, new schools had a large
+impact. In a modern setting where primary enrollment is already high,
+building more schools likely wouldn’t produce the same dramatic increase
+in schooling or wages.</p>
 </div>
 
 
